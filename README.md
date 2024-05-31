@@ -16,36 +16,44 @@ should return `64`
 ```
 lsblk
 ```
-To determine disk to use
+
+### Create initial partition
+For partition instructions '"' means accept the default
 ```
 gdisk /dev/*disk*
 ```
-
-For partition instructions '"' means accept the default
-### efi partition
+Create a partition that takes up the whole disk, use all defaults.
+Then write to disk.
 ```
-n -> " -> " -> +1G -> ef00
-```
-
-### swap partition
-sub `+4g` for how many gigabytes of space you want to commit to swap.
-```
-n -> " -> " -> +4G -> 8200
-```
-
-### root partition
-```
-n -> " -> " -> " -> 8304
-```
-
-```
+n -> " -> " -> " -> "
 w -> y
 ```
-To commit the partitions
 
-## Format partitions
+### LVM Setup
+We want to setup an LVM on the main hard drive so that future drives can be easily expanded
+
+At any point you can run `sudo lvmdiskscan` to get a readout of the current LVM state.
+
+
+#### Create physical volume
+```
+pvcreate /dev/*disk*1
+```
+#### Create volume group
+```
+vgcreate vg1 /dev/*disk*1
+```
+#### Create logical volume
+```
+lvcreate -L 1G vg1
+lvcreate -L 32G vg1
+lvcreate -L 300G vg1
+lvcreate -L 500G vg1
+```
+## Format volumes
 ```
 mkfs.ext4 /dev/root_partition
+mkfs.ext4 /dev/home_partition
 mkfs.fat -F 32 /dev/efi_partition
 mkswap /dev/swap_partition
 ```
@@ -53,6 +61,7 @@ mkswap /dev/swap_partition
 ## Mount partitions
 ```
 mount /dev/root_partition /mnt
+mount --mkdir /dev/home_partition /mnt/home
 mount --mkdir /dev/efi_partition /mnt/boot
 swapon /dev/swap_partition
 ```
